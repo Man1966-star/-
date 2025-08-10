@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Παιχνίδι Αριθμών: Οριζόντια 1–10, Κάθετα 10–90</title>
+<style>
+  :root{
+    --bg:#f8fafc;
+    --card:#ffffff;
+    --muted:#475569;
+    --ok:#16a34a;
+    --bad:#dc2626;
+    --grid:#e2e8f0;
+  }
+  html,body{height:100%;}
+  body{
+    margin:0;
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+    background: var(--bg);
+    color:#0f172a;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:16px;
+  }
+  header, main, footer{
+    width: min(1200px, 96vw);
+  }
+  header{
+    margin-top: 16px;
+    background: var(--card);
+    border:1px solid #e5e7eb;
+    border-radius: 16px;
+    padding: 16px 20px;
+    box-shadow: 0 2px 10px rgba(2,8,20,0.05);
+  }
+  h1{
+    font-size: clamp(18px, 2.2vw, 28px);
+    margin: 0 0 8px 0;
+    letter-spacing: .2px;
+  }
+  p.sub{
+    margin: 6px 0 0 0;
+    color: var(--muted);
+    font-size: clamp(14px, 1.6vw, 16px);
+  }
+  .controls{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    margin-top: 12px;
+  }
+  .btn{
+    appearance:none;
+    border:1px solid #e5e7eb;
+    background: var(--card);
+    border-radius: 12px;
+    padding: 10px 14px;
+    font-size: 16px;
+    cursor:pointer;
+    transition: transform .02s ease, box-shadow .2s ease, background .2s ease;
+    box-shadow: 0 1px 3px rgba(2,8,20,.06);
+  }
+  .btn:hover{ box-shadow: 0 3px 12px rgba(2,8,20,.12); }
+  .btn:active{ transform: translateY(1px); }
+  .btn.primary{ background: #0ea5e9; color:white; border-color: transparent;}
+  .btn.ghost{ background: transparent; }
+  .status{
+    margin-left:auto;
+    font-weight:600;
+    color: var(--muted);
+    align-self:center;
+  }
+  main{
+    background: var(--card);
+    border:1px solid #e5e7eb;
+    border-radius: 16px;
+    padding: 12px;
+    box-shadow: 0 2px 10px rgba(2,8,20,0.05);
+  }
+  .grid-wrapper{
+    overflow:auto;
+    padding: 8px;
+    border-radius: 12px;
+    background: linear-gradient(180deg, #f1f5f9, #fff);
+  }
+  table{
+    border-collapse: separate;
+    border-spacing: 0;
+    min-width: 760px;
+    width:100%;
+  }
+  th, td{
+    border: 1px solid var(--grid);
+    text-align:center;
+  }
+  th{
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: #f8fafc;
+    font-weight:700;
+    color:#0f172a;
+    height: 52px;
+  }
+  th.sticky-left{
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    background: #f8fafc;
+  }
+  td.axis{
+    background: #f1f5f9;
+    font-weight:700;
+    color:#0f172a;
+  }
+  td.axis.sticky-left{
+    position: sticky;
+    left: 0;
+    z-index: 2;
+  }
+  td.cell{
+    background:white;
+  }
+  input.num{
+    width: 100%;
+    height: 52px;
+    font-size: clamp(18px,1.8vw,24px);
+    border: none;
+    outline: none;
+    text-align: center;
+    background: transparent;
+    padding: 0;
+  }
+  /* Slightly bolder feedback colors */
+  td.ok{ background: #86efac; }    /* was #ecfdf5 */
+  td.bad{ background: #fecaca; }   /* was #fef2f2 */
+  td.neutral{ background: white; }
+  .legend{
+    display:flex;
+    gap:12px;
+    margin-top:8px;
+    color: var(--muted);
+    font-size: 14px;
+    flex-wrap:wrap;
+  }
+  .legend .swatch{
+    width: 14px; height: 14px; border-radius: 4px; display:inline-block; margin-right:6px; vertical-align:middle;
+  }
+  .swatch.ok{ background:#86efac; border:1px solid #22c55e;}
+  .swatch.bad{ background:#fecaca; border:1px solid #ef4444;}
+  .swatch.neutral{ background:white; border:1px solid #e5e7eb;}
+  footer{
+    color: var(--muted);
+    padding: 6px 2px 20px;
+    font-size: 12px;
+    text-align: center;
+  }
+  .bigNote{
+    margin-top:8px;
+    font-size: clamp(14px, 1.8vw, 18px);
+    color:#0f172a;
+  }
+</style>
+</head>
+<body>
+  <header>
+    <h1>Πίνακας Αριθμών για Νηπιαγωγείο</h1>
+    <p class="sub">Οριζόντια: <strong>1–10</strong> • Κάθετα: <strong>10–90</strong>. Γράφουμε το άθροισμα (π.χ. 1–10 → 11, 2–10 → 12 κ.ο.κ.).</p>
+    <div class="controls">
+      <button class="btn primary" id="checkBtn">Έλεγχος</button>
+      <button class="btn" id="clearBtn">Καθαρισμός</button>
+      <button class="btn ghost" id="showBtn">Εμφάνιση απαντήσεων</button>
+      <button class="btn ghost" id="hideBtn" style="display:none">Απόκρυψη απαντήσεων</button>
+      <div class="status" id="status">Καλή εξάσκηση!</div>
+    </div>
+    <div class="bigNote">Συμβουλή: Πρώτα λέμε την κάθετη τιμή (δεκάδες) και μετά την οριζόντια (μονάδες).</div>
+  </header>
+
+  <main>
+    <div class="grid-wrapper">
+      <table id="grid"></table>
+      <div class="legend">
+        <span><span class="swatch neutral"></span>Κενό</span>
+        <span><span class="swatch ok"></span>Σωστό</span>
+        <span><span class="swatch bad"></span>Λάθος</span>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    Κατάλληλο για διαδραστικό πίνακα, υπολογιστή ή τάμπλετ.
+  </footer>
+
+<script>
+(function(){
+  const gridEl = document.getElementById('grid');
+  const statusEl = document.getElementById('status');
+  const checkBtn = document.getElementById('checkBtn');
+  const clearBtn = document.getElementById('clearBtn');
+  const showBtn = document.getElementById('showBtn');
+  const hideBtn = document.getElementById('hideBtn');
+
+  const columns = Array.from({length:10}, (_,i)=>i+1); // 1..10 (horizontal)
+  const rows = [10,20,30,40,50,60,70,80,90]; // vertical
+
+  function buildGrid(){
+    // Header row
+    const thead = document.createElement('thead');
+    const headerRow = document.createElement('tr');
+
+    const corner = document.createElement('th');
+    corner.className = 'sticky-left';
+    corner.textContent = 'Κάθετα ↓ / Οριζόντια →';
+    headerRow.appendChild(corner);
+
+    columns.forEach(c => {
+      const th = document.createElement('th');
+      th.textContent = String(c);
+      headerRow.appendChild(th);
+    });
+    thead.appendChild(headerRow);
+
+    // Body
+    const tbody = document.createElement('tbody');
+    rows.forEach(r => {
+      const row = document.createElement('tr');
+
+      const axis = document.createElement('td');
+      axis.className = 'axis sticky-left';
+      axis.textContent = String(r);
+      row.appendChild(axis);
+
+      columns.forEach(c => {
+        const td = document.createElement('td');
+        td.className = 'cell neutral';
+        td.dataset.answer = String(r + c);
+
+        const input = document.createElement('input');
+        input.type = 'number';
+        input.inputMode = 'numeric';
+        input.pattern = '\\\\d*';
+        input.className = 'num';
+        input.placeholder = '…';
+        input.setAttribute('aria-label', `Κάθετα ${r}, Οριζόντια ${c}`);
+
+        input.addEventListener('input', () => {
+          td.classList.remove('ok','bad');
+          td.classList.add('neutral');
+        });
+
+        td.appendChild(input);
+        row.appendChild(td);
+      });
+
+      tbody.appendChild(row);
+    });
+
+    // Compose table
+    gridEl.innerHTML = '';
+    gridEl.appendChild(thead);
+    gridEl.appendChild(tbody);
+    statusEl.textContent = 'Ο πίνακας είναι έτοιμος.';
+  }
+
+  function checkAll(){
+    const cells = gridEl.querySelectorAll('td.cell');
+    let correct = 0;
+    let total = 0;
+    cells.forEach(td => {
+      const input = td.querySelector('input');
+      const ans = td.dataset.answer;
+      const val = input.value.trim();
+      if(val.length){
+        total++;
+        if(val === ans){
+          td.classList.remove('neutral','bad');
+          td.classList.add('ok');
+          correct++;
+        }else{
+          td.classList.remove('neutral','ok');
+          td.classList.add('bad');
+        }
+      }else{
+        td.classList.remove('ok','bad');
+        td.classList.add('neutral');
+      }
+    });
+    statusEl.textContent = `Σωστές: ${correct} / ${total} (συμπληρωμένα).`;
+  }
+
+  function clearAll(){
+    gridEl.querySelectorAll('td.cell').forEach(td => {
+      const input = td.querySelector('input');
+      input.value = '';
+      td.classList.remove('ok','bad');
+      td.classList.add('neutral');
+    });
+    statusEl.textContent = 'Καθαρίστηκαν όλα.';
+  }
+
+  function showAnswers(show){
+    gridEl.querySelectorAll('td.cell').forEach(td => {
+      const input = td.querySelector('input');
+      if(show){
+        input.value = td.dataset.answer;
+        td.classList.remove('bad','neutral');
+        td.classList.add('ok');
+      }else{
+        input.value = '';
+        td.classList.remove('ok','bad');
+        td.classList.add('neutral');
+      }
+    });
+    statusEl.textContent = show ? 'Εμφανίστηκαν οι απαντήσεις.' : 'Απόκρυψη απαντήσεων.';
+    showBtn.style.display = show ? 'none' : '';
+    hideBtn.style.display = show ? '' : 'none';
+  }
+
+  checkBtn.addEventListener('click', checkAll);
+  clearBtn.addEventListener('click', clearAll);
+  showBtn.addEventListener('click', () => showAnswers(true));
+  hideBtn.addEventListener('click', () => showAnswers(false));
+
+  buildGrid();
+})();
+</script>
+</body>
+</html>
